@@ -63,6 +63,9 @@ cd autopay-qr-lab
 ./scripts/setup_termux.sh
 ```
 
+Nota Termux: no actualizamos `pip` dentro de Termux porque Termux lo gestiona
+como paquete del sistema y bloqueara ese intento.
+
 Ejecutar:
 
 ```bash
