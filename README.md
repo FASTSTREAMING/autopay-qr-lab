@@ -101,6 +101,7 @@ Ejecutar:
 ```bash
 export AUTOPAY_SERVER_URL="http://IP_TAILSCALE_VPS:8009"
 export AUTOPAY_DEVICE_ID="android-1"
+./scripts/doctor_termux.sh
 ./scripts/run_termux_worker.sh
 ```
 

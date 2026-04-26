@@ -3,10 +3,12 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 from urllib.parse import urljoin
 
 import requests
+from requests import RequestException
 
 
 SERVER_URL = os.environ.get("AUTOPAY_SERVER_URL", "http://127.0.0.1:8009").rstrip("/")
@@ -15,13 +17,35 @@ DOWNLOAD_DIR = Path(os.environ.get("AUTOPAY_DOWNLOAD_DIR", "/sdcard/Download"))
 TASKER_INTENT_ACTION = os.environ.get("AUTOPAY_TASKER_INTENT_ACTION", "").strip()
 TASKER_DIRECT_TASK = os.environ.get("AUTOPAY_TASKER_TASK", "").strip()
 CLEAN_OLD_QR = os.environ.get("AUTOPAY_CLEAN_OLD_QR", "0") == "1"
+HTTP_TIMEOUT = int(os.environ.get("AUTOPAY_HTTP_TIMEOUT", "20"))
+HTTP_RETRIES = int(os.environ.get("AUTOPAY_HTTP_RETRIES", "2"))
 
 
 def post_status(job_id: str, status: str, message: str = "") -> None:
     url = f"{SERVER_URL}/job/{job_id}/status"
     payload = {"device_id": DEVICE_ID, "status": status, "message": message}
-    resp = requests.post(url, json=payload, timeout=20)
+    resp = requests.post(url, json=payload, timeout=HTTP_TIMEOUT)
     resp.raise_for_status()
+
+
+def request_with_retry(method: str, url: str, **kwargs) -> requests.Response:
+    last_exc: Exception | None = None
+    kwargs.setdefault("timeout", HTTP_TIMEOUT)
+    for attempt in range(1, HTTP_RETRIES + 1):
+        try:
+            resp = requests.request(method, url, **kwargs)
+            resp.raise_for_status()
+            return resp
+        except RequestException as exc:
+            last_exc = exc
+            if attempt < HTTP_RETRIES:
+                print(f"Conexion fallida intento {attempt}/{HTTP_RETRIES}: {exc}")
+                time.sleep(2)
+    raise RuntimeError(
+        f"No pude conectar con {SERVER_URL}. Revisa Tailscale en Android, "
+        f"que la VPS responda /health y que AUTOPAY_SERVER_URL sea correcto. "
+        f"Ultimo error: {last_exc}"
+    )
 
 
 def refresh_android_media(path: Path) -> None:
@@ -92,12 +116,11 @@ def launch_tasker(job_id: str, payment_id: str, tx_code: str, qr_path: Path) -> 
 
 
 def main() -> int:
-    resp = requests.get(
+    resp = request_with_retry(
+        "GET",
         f"{SERVER_URL}/job/next",
         params={"device_id": DEVICE_ID},
-        timeout=20,
     )
-    resp.raise_for_status()
     job = resp.json().get("job")
     if not job:
         print("No hay jobs disponibles.")
@@ -114,8 +137,7 @@ def main() -> int:
 
     print(f"Job asignado: {job_id} ({payment_id})")
     print(f"Descargando QR: {qr_url}")
-    qr_resp = requests.get(qr_url, timeout=20)
-    qr_resp.raise_for_status()
+    qr_resp = request_with_retry("GET", qr_url)
     target.write_bytes(qr_resp.content)
     refresh_android_media(target)
 
