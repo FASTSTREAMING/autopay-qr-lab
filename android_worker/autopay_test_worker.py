@@ -19,6 +19,8 @@ TASKER_DIRECT_TASK = os.environ.get("AUTOPAY_TASKER_TASK", "").strip()
 CLEAN_OLD_QR = os.environ.get("AUTOPAY_CLEAN_OLD_QR", "0") == "1"
 HTTP_TIMEOUT = int(os.environ.get("AUTOPAY_HTTP_TIMEOUT", "20"))
 HTTP_RETRIES = int(os.environ.get("AUTOPAY_HTTP_RETRIES", "2"))
+OPEN_APP_PACKAGE = os.environ.get("AUTOPAY_OPEN_APP_PACKAGE", "").strip()
+OPEN_APP_WAIT_SECS = float(os.environ.get("AUTOPAY_OPEN_APP_WAIT_SECS", "2"))
 
 
 def post_status(job_id: str, status: str, message: str = "") -> None:
@@ -115,6 +117,22 @@ def launch_tasker(job_id: str, payment_id: str, tx_code: str, qr_path: Path) -> 
     return None
 
 
+def open_app_package() -> str | None:
+    if not OPEN_APP_PACKAGE:
+        return None
+    cmd = [
+        "monkey",
+        "-p",
+        OPEN_APP_PACKAGE,
+        "-c",
+        "android.intent.category.LAUNCHER",
+        "1",
+    ]
+    result = subprocess.run(cmd, text=True, capture_output=True, check=False)
+    time.sleep(OPEN_APP_WAIT_SECS)
+    return (result.stdout + result.stderr).strip()
+
+
 def main() -> int:
     resp = request_with_retry(
         "GET",
@@ -143,6 +161,10 @@ def main() -> int:
 
     post_status(job_id, "QR_DOWNLOADED", f"Guardado en {target}")
     print(f"QR guardado en: {target}")
+    open_out = open_app_package()
+    if open_out is not None:
+        post_status(job_id, "OPENING_TAKENOS", open_out[-300:])
+        print(f"App abierta: {OPEN_APP_PACKAGE}")
     tasker_out = launch_tasker(job_id, payment_id, tx_code, target)
     if tasker_out is not None:
         post_status(job_id, "TASKER_INTENT_SENT", tasker_out[-300:])

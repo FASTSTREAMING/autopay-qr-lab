@@ -150,6 +150,16 @@ export AUTOPAY_TASKER_TASK="Takenos QR Prep"
 
 Requiere que Tasker tenga habilitado `Allow External Access`.
 
+Si Tasker recibe el intent pero no logra abrir Takenos, abre Takenos desde Termux antes
+de lanzar Tasker:
+
+```bash
+./scripts/find_android_package.sh takenos
+export AUTOPAY_OPEN_APP_PACKAGE="PAQUETE_DE_TAKENOS"
+export AUTOPAY_OPEN_APP_WAIT_SECS="3"
+./scripts/run_termux_worker.sh
+```
+
 ### Debug Tasker
 
 Probar si Tasker recibe el intent:
