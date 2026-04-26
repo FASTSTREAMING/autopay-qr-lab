@@ -34,6 +34,18 @@ O en segundo plano:
 ./start_test_server_bg.sh
 ```
 
+En VPS es mejor dejarlo como servicio:
+
+```bash
+sudo ./service_start.sh
+```
+
+Ver logs:
+
+```bash
+./service_logs.sh
+```
+
 Probar:
 
 ```bash
