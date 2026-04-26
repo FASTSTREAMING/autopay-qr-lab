@@ -59,6 +59,18 @@ Resetear job:
 curl -X POST http://127.0.0.1:8009/job/TEST-0001/reset
 ```
 
+Importar la ultima orden real pendiente del bot al laboratorio:
+
+```bash
+./import_latest_pending_order.sh
+```
+
+Importar un TX especifico:
+
+```bash
+./import_latest_pending_order.sh --tx-code "TX_AQUI"
+```
+
 ## Tailscale
 
 En la VPS:
@@ -93,6 +105,49 @@ export AUTOPAY_DEVICE_ID="android-1"
 ```
 
 Resultado esperado: aparece `/sdcard/Download/PAY-TEST-0001.png`.
+
+## Lanzar Tasker Automaticamente
+
+Recomendado: en Tasker crea un Profile:
+
+```text
+Event -> Intent Received
+Action: com.autopay.qr.RUN
+```
+
+Ese profile debe ejecutar tu tarea de Takenos.
+
+En Termux:
+
+```bash
+export AUTOPAY_TASKER_INTENT_ACTION="com.autopay.qr.RUN"
+export AUTOPAY_CLEAN_OLD_QR="1"
+./scripts/run_termux_worker.sh
+```
+
+El worker descargara el QR y lanzara el intent. Tasker recibe variables extras:
+
+```text
+job_id
+payment_id
+tx_code
+qr_path
+```
+
+Para reportar estados desde Termux/Tasker puedes llamar:
+
+```bash
+./scripts/post_status.sh "$job_id" PAYMENT_SUBMITTED "Takenos toco pagar"
+./scripts/post_status.sh "$job_id" PAYMENT_SUCCESS_SCREEN "Takenos mostro pago exitoso"
+```
+
+Alternativa menos recomendada: llamar una Task directamente por nombre:
+
+```bash
+export AUTOPAY_TASKER_TASK="Takenos QR Prep"
+```
+
+Requiere que Tasker tenga habilitado `Allow External Access`.
 
 ## Siguiente prueba
 
