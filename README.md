@@ -150,6 +150,45 @@ export AUTOPAY_TASKER_TASK="Takenos QR Prep"
 
 Requiere que Tasker tenga habilitado `Allow External Access`.
 
+### Debug Tasker
+
+Probar si Tasker recibe el intent:
+
+```bash
+./scripts/test_tasker_intent.sh
+```
+
+Si no dispara el perfil, revisa en Tasker:
+
+```text
+Profile -> Event -> Intent Received
+Action: com.autopay.qr.RUN
+Cat: vacio
+Scheme: vacio
+Mime Type: vacio
+```
+
+El perfil debe estar activado y asociado a tu tarea.
+
+Probar ejecucion directa por nombre de tarea:
+
+```bash
+./scripts/run_tasker_direct.sh "Nombre exacto de tu tarea"
+```
+
+Para ejecucion directa habilita en Tasker:
+
+```text
+Preferences -> Misc -> Allow External Access
+```
+
+Reencolar un job desde Termux:
+
+```bash
+./scripts/requeue_job.sh PAY-0232
+./scripts/run_termux_worker.sh
+```
+
 ## Siguiente prueba
 
 Abrir Takenos manualmente y probar si puede leer `PAY-TEST-0001.png` desde galeria.
