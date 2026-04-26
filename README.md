@@ -28,6 +28,12 @@ Iniciar servidor de prueba:
 ./start_test_server.sh
 ```
 
+O en segundo plano:
+
+```bash
+./start_test_server_bg.sh
+```
+
 Probar:
 
 ```bash
